@@ -1,0 +1,558 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>6. Sınıf Bilgi Adası Macerası (RPG)</title>
+<style>
+  :root {
+    --bg: #0f172a;
+    --card: #1e293b;
+    --card-hover: #334155;
+    --primary: #3b82f6;
+    --accent: #f59e0b;
+    --success: #10b981;
+    --danger: #ef4444;
+    --text: #f8fafc;
+    --muted: #94a3b8;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+  body { background: var(--bg); color: var(--text); min-height: 100vh; display: flex; flex-direction: column; align-items: center; }
+  
+  /* Üst Bilgi Çubuğu */
+  header {
+    width: 100%; max-width: 1000px; background: var(--card); padding: 15px 25px;
+    border-bottom-left-radius: 20px; border-bottom-right-radius: 20px;
+    display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 15px;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.4); border-bottom: 2px solid #334155;
+  }
+  .logo { font-size: 1.4rem; font-weight: 800; color: var(--accent); display: flex; align-items: center; gap: 8px; }
+  .stats { display: flex; gap: 15px; flex-wrap: wrap; }
+  .stat-badge {
+    background: #0f172a; padding: 8px 14px; border-radius: 12px; font-weight: 700;
+    display: flex; align-items: center; gap: 6px; border: 1px solid #334155; font-size: 0.95rem;
+  }
+  .xp-bar-wrap { width: 100px; height: 10px; background: #334155; border-radius: 5px; overflow: hidden; }
+  .xp-bar { height: 100%; background: var(--success); width: 0%; transition: width 0.4s; }
+
+  /* Ana Konteyner */
+  main { width: 100%; max-width: 1000px; padding: 25px; flex: 1; }
+
+  /* Harita Görünümü */
+  .map-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+  .shop-btn {
+    background: linear-gradient(135deg, #f59e0b, #d97706); color: #fff; border: none;
+    padding: 10px 20px; border-radius: 12px; font-weight: 700; cursor: pointer;
+    box-shadow: 0 4px 15px rgba(245, 158, 11, 0.3); transition: transform 0.2s;
+  }
+  .shop-btn:hover { transform: scale(1.05); }
+
+  .islands-grid {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px;
+  }
+  .island-card {
+    background: var(--card); border-radius: 18px; padding: 20px; border: 2px solid #334155;
+    transition: all 0.25s; cursor: pointer; position: relative; overflow: hidden;
+  }
+  .island-card:hover { transform: translateY(-5px); border-color: var(--primary); background: var(--card-hover); }
+  .island-card.completed { border-color: var(--success); }
+  .island-icon { font-size: 2.8rem; margin-bottom: 10px; }
+  .island-title { font-size: 1.25rem; font-weight: 700; margin-bottom: 5px; }
+  .island-desc { font-size: 0.9rem; color: var(--muted); margin-bottom: 15px; }
+  .progress-track { width: 100%; height: 8px; background: #0f172a; border-radius: 4px; overflow: hidden; }
+  .progress-fill { height: 100%; background: var(--primary); transition: width 0.3s; }
+  .island-card.completed .progress-fill { background: var(--success); }
+  .island-status { margin-top: 8px; font-size: 0.85rem; font-weight: 600; text-align: right; color: var(--accent); }
+
+  /* Soru Ekranı */
+  #quiz-screen, #shop-screen, #gameover-screen { display: none; }
+  .quiz-box {
+    background: var(--card); border-radius: 20px; padding: 30px; border: 2px solid #334155;
+    box-shadow: 0 15px 35px rgba(0,0,0,0.4);
+  }
+  .quiz-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; color: var(--muted); font-weight: 600; }
+  .question-text { font-size: 1.3rem; font-weight: 700; line-height: 1.5; margin-bottom: 25px; }
+  .options-grid { display: grid; grid-template-columns: 1fr; gap: 12px; }
+  .option-btn {
+    background: #0f172a; color: var(--text); border: 2px solid #334155; padding: 16px 20px;
+    border-radius: 14px; text-align: left; font-size: 1.05rem; cursor: pointer; transition: all 0.2s;
+    display: flex; align-items: center; gap: 12px;
+  }
+  .option-btn:hover:not(:disabled) { border-color: var(--primary); background: #1e293b; }
+  .option-btn.correct { background: rgba(16, 185, 129, 0.2); border-color: var(--success); color: #6ee7b7; }
+  .option-btn.wrong { background: rgba(239, 68, 68, 0.2); border-color: var(--danger); color: #fca5a5; }
+  .option-btn:disabled { cursor: not-allowed; opacity: 0.7; }
+
+  .jokers-bar { display: flex; gap: 12px; margin-top: 25px; flex-wrap: wrap; }
+  .joker-btn {
+    background: #334155; color: #fff; border: none; padding: 10px 16px; border-radius: 10px;
+    cursor: pointer; font-weight: 600; display: flex; align-items: center; gap: 6px; transition: 0.2s;
+  }
+  .joker-btn:hover:not(:disabled) { background: var(--primary); }
+  .joker-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  .feedback-box {
+    margin-top: 20px; padding: 15px; border-radius: 12px; display: none; font-weight: 600;
+  }
+  .next-btn {
+    margin-top: 20px; background: var(--primary); color: #fff; border: none; padding: 14px 28px;
+    border-radius: 12px; font-size: 1.05rem; font-weight: 700; cursor: pointer; display: none; width: 100%;
+  }
+
+  /* Dükkan */
+  .shop-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 20px; margin-top: 20px; }
+  .shop-item {
+    background: var(--card); padding: 20px; border-radius: 16px; border: 2px solid #334155;
+    text-align: center; display: flex; flex-direction: column; justify-content: space-between;
+  }
+  .buy-btn {
+    margin-top: 15px; background: var(--success); color: #fff; border: none; padding: 10px;
+    border-radius: 10px; font-weight: 700; cursor: pointer;
+  }
+  .buy-btn:disabled { background: #475569; cursor: not-allowed; }
+
+  .back-btn {
+    background: #334155; color: #fff; border: none; padding: 8px 16px; border-radius: 10px;
+    cursor: pointer; font-weight: 600; margin-bottom: 15px;
+  }
+  .reset-link { color: var(--muted); font-size: 0.85rem; text-decoration: underline; cursor: pointer; margin-top: 30px; display: inline-block; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">🏰 6. Sınıf Bilgi Adası</div>
+  <div class="stats">
+    <div class="stat-badge">❤️ <span id="hp-val">5</span></div>
+    <div class="stat-badge">🪙 <span id="gold-val">50</span></div>
+    <div class="stat-badge">⭐ Sv. <span id="lvl-val">1</span>
+      <div class="xp-bar-wrap"><div class="xp-bar" id="xp-bar"></div></div>
+    </div>
+  </div>
+</header>
+
+<main>
+  <!-- HARİTA EKRANI -->
+  <div id="map-screen">
+    <div class="map-header">
+      <div>
+        <h2>Keşfedilecek Ders Adaları</h2>
+        <p style="color:var(--muted); font-size:0.9rem;">Tüm adaları fethet ve 6. Sınıf Ustası ol!</p>
+      </div>
+      <button class="shop-btn" onclick="openShop()">🛒 Bilgi Dükkânı</button>
+    </div>
+    <div class="islands-grid" id="islands-container"></div>
+    <center><span class="reset-link" onclick="resetGame()">İlerlemeyi Sıfırla</span></center>
+  </div>
+
+  <!-- SINAV / SAVAŞ EKRANI -->
+  <div id="quiz-screen">
+    <button class="back-btn" onclick="showMap()">← Haritaya Dön</button>
+    <div class="quiz-box">
+      <div class="quiz-top">
+        <span id="quiz-subject">Ders Adı</span>
+        <span id="quiz-progress">Soru 1 / 6</span>
+      </div>
+      <div class="question-text" id="question-text">Soru metni buraya gelecek...</div>
+      <div class="options-grid" id="options-container"></div>
+      
+      <div class="jokers-bar">
+        <button class="joker-btn" id="joker-50" onclick="useFiftyFifty()">⚡ %50 Ele (<span id="count-50">2</span>)</button>
+        <button class="joker-btn" id="joker-hint" onclick="useHint()">💡 Bilge İpucu (<span id="count-hint">2</span>)</button>
+      </div>
+
+      <div class="feedback-box" id="feedback-box"></div>
+      <button class="next-btn" id="next-btn" onclick="nextQuestion()">Sonraki Soru →</button>
+    </div>
+  </div>
+
+  <!-- DÜKKÂN EKRANI -->
+  <div id="shop-screen">
+    <button class="back-btn" onclick="showMap()">← Haritaya Dön</button>
+    <h2>🛒 Bilgi Dükkânı</h2>
+    <p style="color:var(--muted);">Kazandığın altınlarla can ve joker satın alabilirsin.</p>
+    <div class="shop-grid">
+      <div class="shop-item">
+        <div style="font-size:2.5rem;">❤️</div>
+        <h3>+1 Can Yenile</h3>
+        <p style="color:var(--muted); font-size:0.9rem;">Canın azaldığında maceraya devam et.</p>
+        <button class="buy-btn" onclick="buyItem('hp', 30)">30 🪙 Satın Al</button>
+      </div>
+      <div class="shop-item">
+        <div style="font-size:2.5rem;">⚡</div>
+        <h3>+1 %50 Ele Jokeri</h3>
+        <p style="color:var(--muted); font-size:0.9rem;">İki yanlış şıkkı otomatik eler.</p>
+        <button class="buy-btn" onclick="buyItem('j50', 25)">25 🪙 Satın Al</button>
+      </div>
+      <div class="shop-item">
+        <div style="font-size:2.5rem;">💡</div>
+        <h3>+1 Bilge İpucu</h3>
+        <p style="color:var(--muted); font-size:0.9rem;">Soruyla ilgili kilit bir ipucu verir.</p>
+        <button class="buy-btn" onclick="buyItem('hint', 20)">20 🪙 Satın Al</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- CAN BİTTİ EKRANI -->
+  <div id="gameover-screen" style="text-align:center; padding:50px 20px;">
+    <div style="font-size:4rem;">💔</div>
+    <h2 style="margin:15px 0;">Canların Tükendi!</h2>
+    <p style="color:var(--muted); margin-bottom:25px;">Endişelenme, dinlenip 3 canla maceraya geri dönebilirsin.</p>
+    <button class="shop-btn" onclick="revivePlayer()">🔄 3 Can ile Yeniden Başla</button>
+  </div>
+</main>
+
+<script>
+// 6. SINIF TÜM DERSLER SORU BANKASI (36 SORU)
+const GAME_DATA = [
+  {
+    id: "turkce",
+    title: "Türkçe Adası",
+    icon: "📚",
+    desc: "Sözcükte Anlam, İsimler, Sıfatlar, Zamirler ve Ekler",
+    questions: [
+      { q: "'Soğuk' kelimesi aşağıdaki cümlelerin hangisinde mecaz anlamıyla kullanılmıştır?", opts: ["Dolaptan soğuk bir su alıp içti.", "Bize karşı çok soğuk davrandı.", "Kış gelince havalar iyice soğudu.", "Soğuk rüzgar yüzümüze çarpıyordu."], a: 1, hint: "Gerçek sıcaklıkla ilgisi olmayan, duygusal bir tutumu ara." },
+      { q: "'Kitaplık' kelimesindeki '-lık' eki hangi tür ektir?", opts: ["Çekim eki", "Yapım eki", "Çoğul eki", "İyelik eki"], a: 1, hint: "Kelimenin anlamını değiştirip yeni bir kelime türetmiştir." },
+      { q: "Aşağıdaki cümlelerin hangisinde 'belgisiz zamir' kullanılmıştır?", opts: ["Bu kalemi masada buldum.", "Bazıları sınavın çok kolay olduğunu söyledi.", "Sen yarın okula gelecek misin?", "Hangi çantayı beğendin?"], a: 1, hint: "İsmin yerini belli belirsiz tutan sözcüğü bul." },
+      { q: "'Kırmızı elbiseli küçük kız hızlıca koştu.' cümlesinde kaç tane niteleme sıfatı vardır?", opts: ["1", "2", "3", "4"], a: 1, hint: "İsimlere sorulan 'Nasıl?' sorusuna cevap veren kelimeleri say." },
+      { q: "Aşağıdaki kelimelerden hangisi hem yapım hem çekim eki almıştır?", opts: ["Evlerimiz", "Gözlükçü", "Simitçiler", "Kalemler"], a: 2, hint: "Önce yeni kelime türeten, sonra çoğul eki alan kelimeye bak." },
+      { q: "'Gözden düşmek' deyiminin anlamı aşağıdakilerden hangisidir?", opts: ["Çok üzülmek", "Değerini ve sevgiyi yitirmek", "Uzağı görememek", "Şaşırmak"], a: 1, hint: "Birine duyulan güvenin veya sevginin azalmasıyla ilgilidir." }
+    ]
+  },
+  {
+    id: "matematik",
+    title: "Matematik Adası",
+    icon: "📐",
+    desc: "Üslü İfadeler, İşlem Önceliği, Çarpanlar, Kesirler ve Tam Sayılar",
+    questions: [
+      { q: "2⁴ + 3² işleminin sonucu kaçtır?", opts: ["14", "17", "25", "32"], a: 2, hint: "2'yi 4 kere kendisiyle çarp, 3'ü 2 kere kendisiyle çarp ve topla." },
+      { q: "24 ÷ 4 × 2 + 5 işleminin sonucu kaçtır?", opts: ["8", "17", "29", "12"], a: 1, hint: "Bölme ve çarpma aynı önceliktedir; soldan sağa doğru işlem yap." },
+      { q: "Aşağıdaki sayılardan hangisi 36'nın bir çarpanı (böleni) değildir?", opts: ["4", "8", "9", "12"], a: 1, hint: "36 sayısını kalansız bölemeyen sayıyı bul." },
+      { q: "En küçük asal sayı ile iki basamaklı en küçük asal sayının toplamı kaçtır?", opts: ["12", "13", "14", "15"], a: 1, hint: "En küçük asal sayı 2'dir, iki basamaklı en küçük asal sayı ise 11'dir." },
+      { q: "|-12| + |+5| - |-3| işleminin sonucu kaçtır?", opts: ["14", "20", "4", "10"], a: 0, hint: "Mutlak değer içindeki tüm sayılar dışarıya pozitif (+) olarak çıkar." },
+      { q: "2/3 kesrinin 3/4'ü kaçtır?", opts: ["1/2", "5/7", "6/7", "8/9"], a: 0, hint: "Kesirleri çarp ve sadeleştir." }
+    ]
+  },
+  {
+    id: "fen",
+    title: "Fen Bilimleri Adası",
+    icon: "🔬",
+    desc: "Güneş Sistemi, Vücudumuzdaki Sistemler, Kuvvet ve Hareket, Madde ve Isı",
+    questions: [
+      { q: "Güneş sistemindeki en büyük gezegen hangisidir?", opts: ["Satürn", "Uranüs", "Jüpiter", "Neptün"], a: 2, hint: "Gazsal devlerin en büyüğüdür ve 'Dev Gezegen' olarak bilinir." },
+      { q: "Besinlerin kimyasal sindiriminin başladığı ve bittiği organlar sırasıyla hangileridir?", opts: ["Mide - Kalın Bağırsak", "Ağız - İnce Bağırsak", "Yemek Borusu - Mide", "Ağız - Kalın Bağırsak"], a: 1, hint: "Karbonhidratlar tükürükle ilk nerede parçalanır ve emilim nerede tamamlanır?" },
+      { q: "Sabit süratle hareket eden bir araç 3 saatte 270 km yol alıyorsa sürati kaç km/sa'dir?", opts: ["70", "80", "90", "100"], a: 2, hint: "Sürat = Alınan Yol ÷ Zaman formülünü kullan." },
+      { q: "Aşağıdaki maddelerden hangisi ısı yalıtkanı olarak kullanılır?", opts: ["Bakır", "Alüminyum", "Strafor köpük", "Demir"], a: 2, hint: "Binaların dış cephe mantolamasında kullanılan hafif malzemeyi düşün." },
+      { q: "Büyük kan dolaşımı kalbin hangi bölümünden başlar?", opts: ["Sağ kulakçık", "Sol karıncık", "Sağ karıncık", "Sol kulakçık"], a: 1, hint: "Temiz kanı tüm vücuda pompalayan güçlü alt odacıktır." },
+      { q: "Güneş tutulması Ay'ın hangi evresinde gerçekleşir?", opts: ["Dolunay", "İlk dördün", "Yeni ay", "Son dördün"], a: 2, hint: "Ay, Güneş ile Dünya'nın tam arasına girdiğinde karanlık yüzü bize döner." }
+    ]
+  },
+  {
+    id: "sosyal",
+    title: "Sosyal Bilgiler Adası",
+    icon: "🌍",
+    desc: "Birey ve Toplum, Kültür ve Miras (İlk Türk Devletleri & İslamiyet), Coğrafya",
+    questions: [
+      { q: "Orta Asya'da kurulan ilk Türk devleti aşağıdakilerden hangisidir?", opts: ["Göktürk Devleti", "Uygur Devleti", "Asya Hun Devleti", "Karahanlılar"], a: 2, hint: "En parlak dönemini Metehan zamanında yaşamıştır." },
+      { q: "Yerleşik hayata geçen ve tarımla uğraşan ilk Türk devleti hangisidir?", opts: ["Uygurlar", "Hunlar", "Göktürkler", "Kırgızlar"], a: 0, hint: "Maniheizm dinini benimsedikten sonra saraylar ve tapınaklar inşa ettiler." },
+      { q: "Türkiye'nin matematik (mutlak) konumu aşağıdakilerden hangisinde doğru verilmiştir?", opts: ["36°-42° Kuzey paralelleri, 26°-45° Doğu meridyenleri", "26°-45° Kuzey paralelleri, 36°-42° Doğu meridyenleri", "36°-42° Güney paralelleri, 26°-45° Batı meridyenleri", "0°-90° Kuzey paralelleri, 10°-20° Doğu meridyenleri"], a: 0, hint: "Ülkemiz Ekvator'un kuzeyinde, Başlangıç Meridyeni'nin doğusundadır." },
+      { q: "Türk tarihinin ve edebiyatının ilk yazılı belgeleri olan Orhun Yazıtları hangi devlete aittir?", opts: ["Asya Hun", "II. Göktürk (Kutluk)", "Uygur", "Selçuklu"], a: 1, hint: "Bilge Kağan, Kültigin ve Vezir Tonyukuk adına dikilmiştir." },
+      { q: "Aşağıdakilerden hangisi İslamiyet'in doğuşu sırasında Arap Yarımadası'ndaki 'Cahiliye Dönemi' özelliklerinden değildir?", opts: ["Putperestliğin yaygın olması", "Kadınlara değer verilmemesi", "Kabileler arası kan davaları", "Bilim ve sanatta çok ileri olmaları"], a: 3, hint: "Toplumda adaletsizlik ve cehalet hakimdi." },
+      { q: "Ülkemizde Karadeniz ikliminin görüldüğü yerlerde hangi bitki örtüsü yaygındır?", opts: ["Maki", "Bozkır", "Orman", "Tundra"], a: 2, hint: "Her mevsim yağış alan bölgemizde gür ağaç toplulukları bulunur." }
+    ]
+  },
+  {
+    id: "din",
+    title: "Din Kültürü Adası",
+    icon: "🕌",
+    desc: "Peygamber ve İlahi Kitap İnancı, Namaz İbadeti, Zararlı Alışkanlıklar",
+    questions: [
+      { q: "Peygamberlerin Allah'tan aldıkları vahiyleri insanlara eksiksiz iletmesi sıfatına ne ad verilir?", opts: ["Sıdk", "Emanet", "Tebliğ", "Fetanet"], a: 2, hint: "Bildirmek, ulaştırmak anlamına gelir." },
+      { q: "Dört büyük ilahi kitaptan 'Zebur' hangi peygambere indirilmiştir?", opts: ["Hz. Musa", "Hz. Davud", "Hz. İsa", "Hz. İbrahim"], a: 1, hint: "Sesi çok güzel olan ve kendisine demiri işleme sanatı öğretilen peygamberdir." },
+      { q: "Felak suresinin ilk ayetinde geçen 'Felak' kelimesinin Türkçe anlamı nedir?", opts: ["Karanlık gece", "Sabah aydınlığı / Şafak", "İnsanların Rabbi", "Kıskançlık"], a: 1, hint: "Gecenin karanlığını yarıp ortaya çıkan ilk ışık anlamına gelir." },
+      { q: "Aşağıdaki namazlardan hangisi farz namazlardan biri değildir?", opts: ["Sabah namazı", "Cuma namazı", "Teravih namazı", "Cenaze namazı"], a: 2, hint: "Sadece Ramazan ayında kılınan sünnet bir namazdır." },
+      { q: "Kendisine 10 suhuf (sayfa) gönderilen ve 'Halilullah' olarak bilinen peygamber kimdir?", opts: ["Hz. Adem", "Hz. Şit", "Hz. İdris", "Hz. İbrahim"], a: 3, hint: "Kâbe'yi oğlu Hz. İsmail ile birlikte inşa eden peygamberdir." },
+      { q: "Kur'an-ı Kerim ile ilgili aşağıdakilerden hangisi yanlıştır?", opts: ["Son ilahi kitaptır.", "Tek seferde bir bütün olarak indirilmiştir.", "Evrensel bir kitaptır.", "Günümüze kadar bozulmadan gelmiştir."], a: 1, hint: "23 yıllık bir sürede parça parça indirilmiştir." }
+    ]
+  },
+  {
+    id: "ingilizce",
+    title: "İngilizce Adası",
+    icon: "🇬🇧",
+    desc: "Life, Yummy Breakfast, Downtown, Weather and Emotions",
+    questions: [
+      { q: "A: What time do you get up on weekdays? \nB: I get up _____ half past seven.", opts: ["in", "on", "at", "under"], a: 2, hint: "Saatlerden önce kullanılan edatı seç." },
+      { q: "Which one is NOT a healthy breakfast food?", opts: ["Olives", "Cheese", "Honey", "Chips"], a: 3, hint: "Kahvaltı için sağlıklı olmayan abur cuburu bul." },
+      { q: "The weather is _____ and snowy today. Put on your coat!", opts: ["boiling", "freezing", "sunny", "hot"], a: 1, hint: "Karlı bir günde hava dondurucu olur." },
+      { q: "A skyscraper is _____ than a normal house.", opts: ["higher", "shorter", "smaller", "cheaper"], a: 0, hint: "Gökdelen normal bir evden daha yüksektir (Comparative)." },
+      { q: "My brother _____ his homework in the evenings.", opts: ["do", "does", "doing", "is do"], a: 1, hint: "Geniş zamanda (Simple Present) 'He/She/It' özneleriyle fiile -es takısı gelir." },
+      { q: "A: Can I have some croissants? \nB: I'm sorry, _____.", opts: ["enjoy it", "it's all gone", "you're welcome", "yes, please"], a: 1, hint: "'Üzgünüm, hepsi bitti' anlamına gelen ifadeyi bul." }
+    ]
+  }
+];
+
+// OYUN DURUMU (LOCALSTORAGE)
+let state = JSON.parse(localStorage.getItem('sinif6_rpg_save')) || {
+  hp: 5,
+  gold: 50,
+  xp: 0,
+  level: 1,
+  j50: 2,
+  hint: 2,
+  progress: {} // { turkce: 0, matematik: 0 ... }
+};
+
+let currentIsland = null;
+let currentQIndex = 0;
+let answered = false;
+
+// SES EFEKTLERİ (Web Audio API - Harici dosya gerektirmez)
+const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+function playSound(type) {
+  if (audioCtx.state === 'suspended') audioCtx.resume();
+  const osc = audioCtx.createOscillator();
+  const gain = audioCtx.createGain();
+  osc.connect(gain);
+  gain.connect(audioCtx.destination);
+  
+  if (type === 'correct') {
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(523.25, audioCtx.currentTime); // C5
+    osc.frequency.setValueAtTime(659.25, audioCtx.currentTime + 0.1); // E5
+    gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
+    osc.start(); osc.stop(audioCtx.currentTime + 0.3);
+  } else if (type === 'wrong') {
+    osc.type = 'sawtooth';
+    osc.frequency.setValueAtTime(180, audioCtx.currentTime);
+    osc.frequency.linearRampToValueAtTime(120, audioCtx.currentTime + 0.3);
+    gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
+    osc.start(); osc.stop(audioCtx.currentTime + 0.3);
+  } else if (type === 'buy') {
+    osc.type = 'triangle';
+    osc.frequency.setValueAtTime(800, audioCtx.currentTime);
+    gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.15);
+    osc.start(); osc.stop(audioCtx.currentTime + 0.15);
+  }
+}
+
+function saveState() {
+  localStorage.setItem('sinif6_rpg_save', JSON.stringify(state));
+  updateHeader();
+}
+
+function updateHeader() {
+  document.getElementById('hp-val').innerText = state.hp;
+  document.getElementById('gold-val').innerText = state.gold;
+  document.getElementById('lvl-val').innerText = state.level;
+  const xpNeeded = state.level * 100;
+  const pct = Math.min(100, (state.xp / xpNeeded) * 100);
+  document.getElementById('xp-bar').style.width = pct + '%';
+}
+
+function renderMap() {
+  const container = document.getElementById('islands-container');
+  container.innerHTML = '';
+  GAME_DATA.forEach(island => {
+    const solved = state.progress[island.id] || 0;
+    const total = island.questions.length;
+    const isDone = solved >= total;
+    const pct = (solved / total) * 100;
+
+    const card = document.createElement('div');
+    card.className = `island-card ${isDone ? 'completed' : ''}`;
+    card.onclick = () => startIsland(island.id);
+    card.innerHTML = `
+      <div class="island-icon">${island.icon}</div>
+      <div class="island-title">${island.title}</div>
+      <div class="island-desc">${island.desc}</div>
+      <div class="progress-track"><div class="progress-fill" style="width:${pct}%"></div></div>
+      <div class="island-status">${isDone ? '✅ Fethedildi! (Tekrar Oyna)' : `${solved} / ${total} Soru Tamamlandı`}</div>
+    `;
+    container.appendChild(card);
+  });
+}
+
+function showScreen(id) {
+  ['map-screen', 'quiz-screen', 'shop-screen', 'gameover-screen'].forEach(s => {
+    document.getElementById(s).style.display = (s === id) ? 'block' : 'none';
+  });
+}
+
+function showMap() {
+  renderMap();
+  showScreen('map-screen');
+}
+
+function openShop() {
+  showScreen('shop-screen');
+}
+
+function buyItem(type, cost) {
+  if (state.gold < cost) {
+    alert("Yeterli altının yok! Adalardan soru çözerek altın kazanabilirsin.");
+    return;
+  }
+  state.gold -= cost;
+  if (type === 'hp') state.hp += 1;
+  if (type === 'j50') state.j50 += 1;
+  if (type === 'hint') state.hint += 1;
+  playSound('buy');
+  saveState();
+}
+
+function startIsland(islandId) {
+  if (state.hp <= 0) {
+    showScreen('gameover-screen');
+    return;
+  }
+  currentIsland = GAME_DATA.find(i => i.id === islandId);
+  const savedIdx = state.progress[islandId] || 0;
+  currentQIndex = savedIdx >= currentIsland.questions.length ? 0 : savedIdx;
+  showScreen('quiz-screen');
+  loadQuestion();
+}
+
+function loadQuestion() {
+  answered = false;
+  const qObj = currentIsland.questions[currentQIndex];
+  document.getElementById('quiz-subject').innerText = `${currentIsland.icon} ${currentIsland.title}`;
+  document.getElementById('quiz-progress').innerText = `Soru ${currentQIndex + 1} / ${currentIsland.questions.length}`;
+  document.getElementById('question-text').innerText = qObj.q;
+  
+  const fb = document.getElementById('feedback-box');
+  fb.style.display = 'none';
+  document.getElementById('next-btn').style.display = 'none';
+
+  document.getElementById('count-50').innerText = state.j50;
+  document.getElementById('count-hint').innerText = state.hint;
+  document.getElementById('joker-50').disabled = state.j50 <= 0;
+  document.getElementById('joker-hint').disabled = state.hint <= 0;
+
+  const optContainer = document.getElementById('options-container');
+  optContainer.innerHTML = '';
+  const letters = ['A', 'B', 'C', 'D'];
+  qObj.opts.forEach((optText, idx) => {
+    const btn = document.createElement('button');
+    btn.className = 'option-btn';
+    btn.innerHTML = `<strong>${letters[idx]})</strong> <span>${optText}</span>`;
+    btn.onclick = () => checkAnswer(idx, btn);
+    optContainer.appendChild(btn);
+  });
+}
+
+function checkAnswer(selectedIdx, btnElement) {
+  if (answered) return;
+  answered = true;
+  const qObj = currentIsland.questions[currentQIndex];
+  const allBtns = document.querySelectorAll('.option-btn');
+  allBtns.forEach(b => b.disabled = true);
+  document.getElementById('joker-50').disabled = true;
+  document.getElementById('joker-hint').disabled = true;
+
+  const fb = document.getElementById('feedback-box');
+  fb.style.display = 'block';
+
+  if (selectedIdx === qObj.a) {
+    btnElement.classList.add('correct');
+    playSound('correct');
+    state.gold += 15;
+    state.xp += 35;
+    if (state.xp >= state.level * 100) {
+      state.xp -= state.level * 100;
+      state.level += 1;
+      state.hp += 1;
+      fb.innerHTML = `🎉 Tebrikler! Doğru cevap (+15 🪙, +35 XP) ve SEVİYE ATLADIN! (+1 ❤️)`;
+    } else {
+      fb.innerHTML = `✅ Harika! Doğru cevap. (+15 🪙 ve +35 XP kazandın)`;
+    }
+    fb.style.background = 'rgba(16, 185, 129, 0.2)';
+    fb.style.color = '#6ee7b7';
+
+    // İlerlemeyi kaydet
+    const prevSolved = state.progress[currentIsland.id] || 0;
+    if (currentQIndex + 1 > prevSolved) {
+      state.progress[currentIsland.id] = currentQIndex + 1;
+    }
+  } else {
+    btnElement.classList.add('wrong');
+    allBtns[qObj.a].classList.add('correct');
+    playSound('wrong');
+    state.hp -= 1;
+    fb.innerHTML = `❌ Yanlış cevap! 1 Can kaybettin. Doğru şık işaretlendi.`;
+    fb.style.background = 'rgba(239, 68, 68, 0.2)';
+    fb.style.color = '#fca5a5';
+  }
+
+  saveState();
+
+  if (state.hp <= 0) {
+    setTimeout(() => showScreen('gameover-screen'), 1500);
+  } else {
+    const nextBtn = document.getElementById('next-btn');
+    nextBtn.style.display = 'block';
+    nextBtn.innerText = (currentQIndex + 1 < currentIsland.questions.length) ? 'Sonraki Soru →' : 'Adayı Tamamla ve Haritaya Dön 🏆';
+  }
+}
+
+function nextQuestion() {
+  currentQIndex++;
+  if (currentQIndex < currentIsland.questions.length) {
+    loadQuestion();
+  } else {
+    showMap();
+  }
+}
+
+function useFiftyFifty() {
+  if (state.j50 <= 0 || answered) return;
+  const qObj = currentIsland.questions[currentQIndex];
+  const allBtns = Array.from(document.querySelectorAll('.option-btn'));
+  let wrongIndices = [0, 1, 2, 3].filter(i => i !== qObj.a);
+  wrongIndices.sort(() => Math.random() - 0.5);
+  
+  allBtns[wrongIndices[0]].style.visibility = 'hidden';
+  allBtns[wrongIndices[1]].style.visibility = 'hidden';
+  
+  state.j50 -= 1;
+  document.getElementById('count-50').innerText = state.j50;
+  document.getElementById('joker-50').disabled = true;
+  saveState();
+}
+
+function useHint() {
+  if (state.hint <= 0 || answered) return;
+  const qObj = currentIsland.questions[currentQIndex];
+  const fb = document.getElementById('feedback-box');
+  fb.style.display = 'block';
+  fb.style.background = 'rgba(245, 158, 11, 0.2)';
+  fb.style.color = '#fcd34d';
+  fb.innerHTML = `💡 <strong>Bilge İpucu:</strong> ${qObj.hint}`;
+  
+  state.hint -= 1;
+  document.getElementById('count-hint').innerText = state.hint;
+  document.getElementById('joker-hint').disabled = true;
+  saveState();
+}
+
+function revivePlayer() {
+  state.hp = 3;
+  saveState();
+  showMap();
+}
+
+function resetGame() {
+  if (confirm("Tüm ilerlemen, altınların ve seviyen sıfırlanacak. Emin misin?")) {
+    localStorage.removeItem('sinif6_rpg_save');
+    location.reload();
+  }
+}
+
+// Başlat
+updateHeader();
+showMap();
+</script>
+</body>
+</html>
